@@ -1,0 +1,13 @@
+name: ml-fgm-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - cantera
+  - numpy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - pytorch
+  - pip
