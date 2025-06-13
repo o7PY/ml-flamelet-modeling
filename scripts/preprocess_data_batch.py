@@ -35,8 +35,12 @@ def preprocess_flamelet(file_path):
         Y = Y[:min_len]
         T = T[:min_len]
 
-    wdot_C = np.gradient(C, z)
+    # Calculate omega_C and apply log10 transform
+    omega_C = np.gradient(C, z)
+    omega_C_clipped = np.clip(omega_C, 1e-12, None)  # avoid log(0)
+    log_omega_C = np.log10(omega_C_clipped)
 
+    # Thermophysical properties
     gas = ct.Solution("gri30.yaml")
     Cp, mu, kappa = [], [], []
 
@@ -54,9 +58,9 @@ def preprocess_flamelet(file_path):
     mdot = int(parts[3][1:]) / 1000.0
 
     df = pd.DataFrame({
-        "Z": np.linspace(0, 1, len(C)),  # placeholder Z
+        "Z": np.linspace(0, 1, len(C)),  # placeholder
         "C": C,
-        "omega_C": wdot_C,
+        "log_omega_C": log_omega_C,
         "Cp": Cp,
         "mu": mu,
         "kappa": kappa,

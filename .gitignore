@@ -1,2 +1,4 @@
 scripts/generate_flamelets1.py
 data/raw/
+scripts/__pycache__/
+model_code/__pycache__/
