@@ -2,35 +2,37 @@ import cantera as ct
 import numpy as np
 import os
 
-gas = ct.Solution("gri30.yaml")  # or your mechanism like nDodecane if available
-width = 0.02  # 2 cm domain
-n_points = 200
+def generate_flamelet(T_inlet=300.0, P=ct.one_atm, mdot=0.12, fuel="CH4:1.0", oxidizer="O2:1.0, N2:3.76",
+                      width=0.02, mech="gri30.yaml", save_path="data/raw"):
+    gas = ct.Solution(mech)
 
-fuel = 'CH4:1.0'
-oxidizer = 'O2:1.0, N2:3.76'
-p = ct.one_atm
-T_fuel = 300.0
-T_oxidizer = 300.0
+    flame = ct.CounterflowDiffusionFlame(gas, width=width)
+    flame.fuel_inlet.mdot = mdot
+    flame.fuel_inlet.T = T_inlet
+    flame.fuel_inlet.X = fuel
 
-flame = ct.CounterflowDiffusionFlame(gas, width=width)
-flame.fuel_inlet.mdot = 0.12
-flame.fuel_inlet.T = T_fuel
-flame.fuel_inlet.X = fuel
-flame.oxidizer_inlet.mdot = 0.12
-flame.oxidizer_inlet.T = T_oxidizer
-flame.oxidizer_inlet.X = oxidizer
+    flame.oxidizer_inlet.mdot = mdot
+    flame.oxidizer_inlet.T = T_inlet
+    flame.oxidizer_inlet.X = oxidizer
 
-flame.set_refine_criteria(ratio=3.0, slope=0.06, curve=0.12)
-flame.solve(loglevel=1, auto=True)
+    flame.P = P
+    flame.set_refine_criteria(ratio=3.0, slope=0.06, curve=0.12)
 
-# Save the data
-output_dir = "data/raw"
-os.makedirs(output_dir, exist_ok=True)
+    try:
+        flame.solve(loglevel=0, auto=True)
+        os.makedirs(save_path, exist_ok=True)
+        filename = f"{save_path}/flamelet_T{int(T_inlet)}_P{int(P/1e5)}_M{int(mdot*1000)}.npz"
+        np.savez(filename,
+                 z=flame.grid,
+                 T=flame.T,
+                 species=flame.Y,
+                 species_names=flame.gas.species_names)
+        print(f"✅ Saved flamelet: {filename}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed: T={T_inlet}, P={P}, mdot={mdot} — {e}")
+        return False
 
-np.savez(f"{output_dir}/flamelet_case1.npz",
-         z=flame.grid,
-         T=flame.T,
-         species=flame.Y,
-         species_names=flame.gas.species_names)
-
-print("Flamelet generated and saved.")
+# Allow standalone use too
+if __name__ == "__main__":
+    generate_flamelet()
