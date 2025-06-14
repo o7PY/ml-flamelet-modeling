@@ -154,6 +154,7 @@ ANN2 is a deeper feedforward neural network architecture, designed to improve le
 - **Output:** log(ω̇<sub>C</sub>)
 
 This model is trained using MSE loss and the Adam optimizer, for 100 epochs. The increased depth and width allow ANN2 to achieve slightly better generalization compared to ANN1.
+<br>
 **Performance:**
 
 | Split       | RMSE    | R²      | MAAPE   |
@@ -196,3 +197,58 @@ This model is trained using MSE loss and the Adam optimizer, for 100 epochs. The
   - Elevated AAPE aligns with the high‑gradient regions highlighted in the error map.  
 
 Conclusion: ANN2 retains the strong predictive power of ANN1 while trimming validation and test errors slightly, reinforcing its suitability for modeling \( \dot{\omega}_C \) across the flamelet manifold.
+
+### 🌲 RF: Random Forest Regressor
+
+The Random Forest model uses an ensemble of decision trees to predict the source term log(ω̇<sub>C</sub>). It is non-parametric, handles non-linear interactions well, and requires minimal preprocessing. In this project, the RF model was trained using scikit-learn’s `RandomForestRegressor` with 100 estimators and a fixed random seed for reproducibility.
+
+Unlike neural networks, RF does not require feature scaling or backpropagation. It achieves strong performance due to its ability to model complex interactions and average across trees to reduce variance.
+<br>
+**Performance:**
+| Split       | RMSE    | R²      | MAAPE   |
+|-------------|---------|---------|---------|
+| Validation  | 0.7614  | 0.9853  | 0.0323  |
+| Test        | 0.7962  | 0.9842  | 0.0317  |
+
+**Predictions vs Ground Truth**  
+![RF Predictions vs True](results/graph/rf/rf_pred_vs_true.png)
+
+- **Inference:**
+  - Predictions align closely with the ideal \( y = x \) line, indicating excellent accuracy.
+  - Minor deviations occur in extreme value ranges, but the overall distribution shows high fidelity.
+  - The high R² and low error metrics support strong model reliability.
+
+**AAPE Map (Average Absolute Percentage Error)**  
+![RF AAPE](results/graph/rf/rf_aape_heat.png)
+
+- **Inference:**
+  - Most of the Z–C domain exhibits very low percentage error (dark regions).
+  - Isolated areas with higher AAPE suggest possible extrapolation zones or sparse training coverage.
+  - Consistency across the bulk of the domain indicates strong generalization.
+
+  ### 📈 GBT: Gradient Boosted Trees
+
+The Gradient Boosted Trees model uses an ensemble of shallow trees trained sequentially, where each new tree corrects the residuals of the previous ones. GBT is particularly effective in capturing complex non-linear relationships with high accuracy and low bias.
+
+This model was implemented using `GradientBoostingRegressor` from scikit-learn with 300 estimators, learning rate of 0.05, and a fixed depth. While GBTs typically train slower than RFs, they often outperform in terms of generalization on structured tabular data.
+<br>
+**Performance:**
+
+| Split       | RMSE    | R²      | MAAPE   |
+|-------------|---------|---------|---------|
+| Validation  | 0.8637  | 0.9811  | 0.0493  |
+| Test        | 0.9047  | 0.9796  | 0.0479  |
+
+**Predictions vs Ground Truth**  
+![RF Predictions vs True](results/graph/gbt/gbt_pred_vs_true.png)
+
+- **Inference:**
+    - Most predictions are tightly clustered around the ideal line (in red), confirming generally accurate predictions.
+    - Slightly more scatter in regions with higher true values compared to ANN2 and RF.
+
+**AAPE Map (Average Absolute Percentage Error)**  
+![RF AAPE](results/graph/gbt/gbt_aape_heat.png)
+
+- **Inference:**
+    - The AAPE (Average Absolute Percentage Error) map shows areas of relatively higher errors concentrated at the edges and some sharp streaks across the domain.
+    - Similar patterns are visible in RF and ANN2, likely due to sparsity or edge effects.
