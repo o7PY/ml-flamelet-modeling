@@ -65,3 +65,34 @@ def plot_combined_pred_vs_true(model_names=["ann1", "ann2", "rf", "gbt"], output
     plt.tight_layout()
     plt.savefig(output)
     plt.close()
+
+def plot_heatmap(Z, C, values, title, output, cmap="plasma"):
+    from scipy.interpolate import griddata
+
+    # Grid
+    xi = np.linspace(Z.min(), Z.max(), 200)
+    yi = np.linspace(C.min(), C.max(), 200)
+    zi = griddata((Z, C), values, (xi[None, :], yi[:, None]), method="linear")
+
+    # Plot
+    plt.figure(figsize=(6, 5))
+    cp = plt.contourf(xi, yi, zi, 100, cmap=cmap)
+    plt.colorbar(cp)
+    plt.xlabel("Z")
+    plt.ylabel("C")
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(output)
+    plt.close()
+
+def plot_heatmaps_for_model(model):
+    file = f"results/graph/{model}/{model}_raw.npz"
+    data = np.load(file)
+    Z, C = data["Z_val"], data["C_val"]
+    y_true = data["y_true_val"].flatten()
+    y_pred = data["y_pred_val"].flatten()
+    err = y_pred - y_true
+
+    plot_heatmap(Z, C, y_true, f"{model.upper()} True log(ω̇C)", f"results/graph/{model}/{model}_true_heat.png")
+    plot_heatmap(Z, C, y_pred, f"{model.upper()} Predicted log(ω̇C)", f"results/graph/{model}/{model}_pred_heat.png")
+    plot_heatmap(Z, C, err, f"{model.upper()} Prediction Error", f"results/graph/{model}/{model}_error_heat.png")

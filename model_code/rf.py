@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-
+import joblib
 from evaluate import print_metrics
 from plots import save_pred_vs_true
 import os
-
+from utils import set_seed
+set_seed(42)
 # 1. Load data
 df = pd.read_csv("data/processed/big_dataset.csv")
 input_cols = ["Z", "C", "T_inlet", "P_bar", "mdot"]
@@ -24,6 +25,7 @@ y_scaler = StandardScaler()
 X_scaled = X_scaler.fit_transform(X)
 y_scaled = y_scaler.fit_transform(y).ravel()  # flatten for scikit-learn
 
+set_seed()
 # 3. Split: train (70%), val (15%), test (15%)
 X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_scaled, test_size=0.3, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
@@ -51,3 +53,20 @@ os.makedirs("results/graph/rf", exist_ok=True)
 save_pred_vs_true(y_val_true_inv, y_val_pred_inv, model_name="rf")
 with open("results/graph/rf/rf_metrics.json", "w") as f:
     json.dump({"val": val_stats, "test": test_stats}, f, indent=2)
+
+joblib.dump(rf, "results/graph/rf/rf_model.joblib")  # or gbt_model.joblib
+
+# Save prediction data for plotting
+df = pd.read_csv("data/processed/big_dataset.csv")
+Z = df["Z"].values
+C = df["C"].values
+
+val_indices = X_val.shape[0]
+Z_val = Z[-(val_indices + X_test.shape[0]):-X_test.shape[0]]
+C_val = C[-(val_indices + X_test.shape[0]):-X_test.shape[0]]
+
+np.savez("results/graph/rf/rf_raw.npz",  # or gbt_raw.npz
+         y_true_val=y_val_true_inv,
+         y_pred_val=y_val_pred_inv,
+         Z_val=Z_val,
+         C_val=C_val)

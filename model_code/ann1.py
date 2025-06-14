@@ -5,9 +5,13 @@ from data_loader import load_dataset
 from evaluate import print_metrics
 from plots import save_loss_plot, save_pred_vs_true
 import numpy as np
+from utils import set_seed
+set_seed(42)
 
 # 1. Load data
-train_loader, val_loader, test_loader, X_scaler, y_scaler = load_dataset(batch_size=256)
+train_loader, val_loader, test_loader, X_scaler, y_scaler, X_full = load_dataset(batch_size=256)
+
+
 
 # 2. Define ANN1 model
 class ANN1(nn.Module):
@@ -97,13 +101,22 @@ y_test_pred_inv = y_scaler.inverse_transform(y_test_pred)
 # Print test metrics
 test_stats = print_metrics(y_test_true_inv, y_test_pred_inv, label="Test")
 
+
+
+val_indices = val_loader.dataset.indices
+X_val = X_full[val_indices]
+Z_val = X_val[:, 0]  # column 0 = Z
+C_val = X_val[:, 1]  # column 1 = C
+
 # 7. Save plots
 save_loss_plot(train_losses, val_losses, model_name="ann1")
 save_pred_vs_true(y_val_true_inv, y_val_pred_inv, model_name="ann1")
 with open("results/graph/ann1/ann1_metrics.json", "w") as f:
     json.dump({"val": val_stats, "test": test_stats}, f, indent=2)
-np.savez(f"results/graph/ann1/ann1_raw.npz",
+np.savez("results/graph/ann1/ann1_raw.npz",
          train_losses=train_losses,
          val_losses=val_losses,
          y_true_val=y_val_true_inv,
-         y_pred_val=y_val_pred_inv)
+         y_pred_val=y_val_pred_inv,
+         Z_val=Z_val,
+         C_val=C_val)

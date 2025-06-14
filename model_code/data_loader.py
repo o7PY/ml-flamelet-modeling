@@ -2,11 +2,12 @@ import pandas as pd
 import torch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset, random_split
+from utils import set_seed
 
 def load_dataset(csv_path="data/processed/big_dataset.csv", target_col="log_omega_C", batch_size=256):
     df = pd.read_csv(csv_path)
     input_cols = ["Z", "C", "T_inlet", "P_bar", "mdot"]
-
+    set_seed()
     X = df[input_cols].values
     y = df[[target_col]].values
 
@@ -30,4 +31,4 @@ def load_dataset(csv_path="data/processed/big_dataset.csv", target_col="log_omeg
     val_loader = DataLoader(val_set, batch_size=batch_size)
     test_loader = DataLoader(test_set, batch_size=batch_size)
 
-    return train_loader, val_loader, test_loader, X_scaler, y_scaler
+    return train_loader, val_loader, test_loader, X_scaler, y_scaler, X_tensor.numpy()
