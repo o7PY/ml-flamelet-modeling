@@ -1,8 +1,8 @@
-# 🔥 Flamelet-Based Combustion Modeling using Machine Learning
+# Flamelet-Based Combustion Modeling using Machine Learning
 
-## 📘 Introduction
+## Introduction
 
-This project replaces traditional combustion table lookups (Flamelet-Generated Manifolds, FGM) with machine learning surrogates. The goal is to predict the **source term of the progress variable, log(ω̇<sub>C</sub>)**, directly from a small set of physical inputs — avoiding the need to interpolate large pre-tabulated flamelet libraries during a combustion simulation.
+This project replaces traditional combustion table lookups (Flamelet-Generated Manifolds, FGM) with machine learning surrogates. The goal is to predict the **source term of the progress variable, log(ω̇<sub>C</sub>)**, directly from a small set of physical inputs, avoiding the need to interpolate large pre-tabulated flamelet libraries during a combustion simulation.
 
 We generate our own flamelet data with **Cantera**, turn it into a supervised regression dataset, and train/compare four regressors:
 - Feedforward Neural Networks (**ANN1** — shallow baseline, **ANN2** — deeper)
@@ -13,7 +13,7 @@ All models are evaluated with the same metrics (RMSE, R², MAAPE, tolerance accu
 
 ---
 
-## 🧪 How the Data is Generated
+## How the Data is Generated
 
 Flamelet data comes from **counterflow diffusion flames** solved in Cantera (`dataset_generation/generate_flamelets.py`), using the GRI-Mech 3.0 mechanism with CH₄ as fuel and O₂/N₂ as oxidizer. Each flamelet is parameterized by:
 
@@ -25,7 +25,7 @@ Flamelet data comes from **counterflow diffusion flames** solved in Cantera (`da
 
 **Preprocessing** (`dataset_generation/preprocess_data_batch.py`) turns each raw flamelet into training rows:
 1. Computes the **progress variable C** as a weighted sum of CO, CO₂, H₂O, and OH mass fractions.
-2. Computes **ω̇<sub>C</sub>** as the gradient of C along the flamelet grid, clips it to avoid `log(0)`, and takes `log10` → this is the regression **target** (`log_omega_C`).
+2. Computes **ω̇<sub>C</sub>** as the gradient of C along the flamelet grid, clips it to avoid `log(0)`, and takes `log10` of it — this is the regression **target** (`log_omega_C`).
 3. Uses Cantera to look up thermophysical properties (**Cp**, viscosity **μ**, thermal conductivity **κ**) at each grid point.
 4. Parses `T_inlet`, `P_bar`, `mdot` back out of the filename and attaches them as extra columns.
 
@@ -35,7 +35,7 @@ All flamelets are concatenated into a single table: **`data/processed/big_datase
 
 ---
 
-## 🧠 Models (`model_code/`)
+## Models (`model_code/`)
 
 All four models share the same preprocessing: features and target are standardized with `StandardScaler`, and the data is split **70% train / 15% validation / 15% test** (`data_loader.py` for the ANNs, an equivalent `train_test_split` for the tree models). A fixed seed (`utils.set_seed`) keeps runs reproducible.
 
@@ -53,7 +53,7 @@ Shared helpers:
 
 ---
 
-## ⚙️ Running the Project
+## Running the Project
 
 ### 1. Environment Setup
 
@@ -99,9 +99,9 @@ All plots are saved under `results/graph/`.
 
 ---
 
-## 📊 Results
+## Results
 
-### 🔧 ANN1: Baseline Neural Network
+### ANN1: Baseline Neural Network
 
 ANN1 is a lightweight feedforward network serving as a baseline for predicting log(ω̇<sub>C</sub>): `Input (5) → Linear(64) → ReLU → Linear(32) → ReLU → Linear(1)`, trained with MSE loss and Adam over 100 epochs.
 
@@ -124,7 +124,7 @@ ANN1 demonstrates strong predictive accuracy and generalization across the combu
 
 ---
 
-### 🔧 ANN2: Deep Neural Network
+### ANN2: Deep Neural Network
 
 ANN2 is a deeper feedforward network designed to improve learning capacity over ANN1: `Input (5) → Linear(128) → ReLU → Linear(64) → ReLU → Linear(32) → ReLU → Linear(16) → ReLU → Linear(1)`, also trained with MSE loss and Adam over 100 epochs.
 
@@ -145,9 +145,9 @@ ANN2 is a deeper feedforward network designed to improve learning capacity over 
 
 ---
 
-### 🌲 RF: Random Forest Regressor
+### RF: Random Forest Regressor
 
-The Random Forest model uses an ensemble of decision trees to predict log(ω̇<sub>C</sub>). It's non-parametric, handles non-linear interactions well, and needs no gradient-based training. Implemented with scikit-learn's `RandomForestRegressor` (100 estimators, fixed seed).
+The Random Forest model uses an ensemble of decision trees to predict log(ω̇<sub>C</sub>). It is non-parametric, handles non-linear interactions well, and needs no gradient-based training. Implemented with scikit-learn's `RandomForestRegressor` (100 estimators, fixed seed).
 
 **Performance:**
 | Split       | RMSE    | R²      | MAAPE   |
@@ -162,7 +162,7 @@ The Random Forest model uses an ensemble of decision trees to predict log(ω̇<s
 
 ---
 
-### 📈 GBT: Gradient Boosted Trees
+### GBT: Gradient Boosted Trees
 
 The Gradient Boosted Trees model trains shallow trees sequentially, each correcting the residuals of the previous ones. Implemented with `GradientBoostingRegressor` (300 estimators, learning rate 0.05, max depth 6). Slower to train than RF, but often competitive on structured tabular data.
 
@@ -179,11 +179,11 @@ The Gradient Boosted Trees model trains shallow trees sequentially, each correct
 
 ---
 
-## 📊 Overall Model Comparisons
+## Overall Model Comparisons
 
 The bar plots below (generated by `model_code/compare.py`) consolidate validation and test scores across RMSE, R², MAAPE, and accuracy (`|Δ| ≤ 0.1`) for all four models.
 
-### 📈 Validation Set
+### Validation Set
 | Model | RMSE ↓ | R² ↑ | MAAPE ↓ | Accuracy (\|Δ\| ≤ 0.1) ↑ |
 |-------|--------|------|---------|----------------------------|
 | ANN1 | 0.8783 | 0.9807 | 0.1215 | 34.21% |
@@ -199,7 +199,7 @@ The bar plots below (generated by `model_code/compare.py`) consolidate validatio
 - **ANN2** improves over ANN1 in MAAPE (7.04% vs 12.15%) and accuracy, but both ANNs still lag far behind the tree-based methods in predictive precision.
 - **ANN1** has the highest error rates, likely due to underfitting with its shallow architecture.
 
-### 📈 Test Set
+### Test Set
 | Model | RMSE ↓ | R² ↑ | MAAPE ↓ | Accuracy (\|Δ\| ≤ 0.1) ↑ |
 |-------|--------|------|---------|----------------------------|
 | ANN1 | 0.8978 | 0.9799 | 0.1233 | 33.54% |
@@ -217,7 +217,7 @@ The bar plots below (generated by `model_code/compare.py`) consolidate validatio
 
 ---
 
-## ✅ Conclusion
+## Conclusion
 
 Among all models tested, **tree-based ensemble methods (RF and GBT)** clearly outperform the neural networks (ANN1 and ANN2) across every evaluation metric:
 
@@ -230,7 +230,7 @@ For a structured, low-dimensional combustion dataset like this one, classical en
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 dataset_generation/   # Cantera flamelet generation + preprocessing into big_dataset.csv
